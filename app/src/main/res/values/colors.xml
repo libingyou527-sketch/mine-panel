@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="cyan_accent">#7FE7D9</color>
+    <color name="bg_deep">#0B0F0E</color>
+    <color name="surface_deep">#141B19</color>
+    <color name="text_primary">#E6F2EF</color>
+    <color name="text_muted">#7E8C88</color>
+</resources>

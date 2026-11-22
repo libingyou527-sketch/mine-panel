@@ -1,0 +1,43 @@
+# Built files
+build/
+app/build/
+.cxx/
+*.apk
+*.aab
+
+# Signing material (never commit)
+*.keystore
+*.jks
+*.p12
+*.pfx
+keystore.properties
+app/keystore/
+
+# Gradle / Kotlin
+.gradle/
+.kotlin/
+gradle/wrapper/gradle-wrapper.properties.bak
+
+# Local config
+local.properties
+*.local
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Model files never committed (local import only)
+models/
+*.gguf
+*.bin
+
+# Intermediate exports (default off; never commit)
+exports/
+
+# Internal dev log (local only; contains machine paths and device identifiers)
+docs/PLAN.md

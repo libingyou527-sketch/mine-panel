@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">mine panel</string>
+    <string name="sentinel_recording">正在记录</string>
+    <string name="sentinel_paused">记录已暂停</string>
+</resources>

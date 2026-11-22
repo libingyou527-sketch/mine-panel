@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      默认权限（阶段 1 启用）：
+      - PACKAGE_USAGE_STATS：使用情况访问（特殊权限，引导至系统设置授予）
+      - FOREGROUND_SERVICE / FOREGROUND_SERVICE_DATA_SYNC：常驻“正在记录”前台服务
+      - POST_NOTIFICATIONS：显示常驻通知（Android 13+ 运行时申请）
+    -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      移除 WorkManager(work-runtime) 传递声明的权限：
+      - ACCESS_NETWORK_STATE：红线，本应用不读取网络状态，强制移除。
+      - RECEIVE_BOOT_COMPLETED：MVP 不做开机自启/开机恢复；重启后任务由下次应用启动时恢复。
+      WAKE_LOCK 为后台任务本地执行所需，予以保留（不联网），审计见 sbom/dependencies.md。
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
+
+    <!--
+      红线：以下权限在本清单中一律不声明，代码中也不请求：
+      INTERNET / ACCESS_NETWORK_STATE / CAMERA / RECORD_AUDIO /
+      READ_SMS / READ_CONTACTS / READ_CALL_LOG（未启用插件时）/
+      无障碍服务 / 截图 / 剪贴板读取。
+      阶段 5 可选插件仅为本地开关占位：不注册采集组件、不申请对应权限、不写插件事件表；
+      各插件的组件与敏感权限在其真实采集落地阶段再逐项引入，且默认关闭。
+    -->
+
+    <application
+        android:name=".MinePanelApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.MinePanel"
+        android:enableOnBackInvokedCallback="true"
+        tools:targetApi="35">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".service.RecordingService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+    </application>
+
+</manifest>

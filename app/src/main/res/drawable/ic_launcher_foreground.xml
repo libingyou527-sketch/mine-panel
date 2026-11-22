@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自适应图标前景：居中面板卡片，内有三条记忆条目（两条灰青、一条青色高亮）。
+     底色由 adaptive-icon 背景层 @color/bg_deep 提供；视口 108dp，
+     关键元素落在中心 66dp 安全区内，外圈 18dp 允许被启动器形状裁剪。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 面板卡片 -->
+    <path
+        android:pathData="M38,34 L70,34 a8,8 0 0 1 8,8 L78,62 a8,8 0 0 1 -8,8 L38,70 a8,8 0 0 1 -8,-8 L30,42 a8,8 0 0 1 8,-8 Z"
+        android:fillColor="#141B19"
+        android:strokeColor="#7FE7D9"
+        android:strokeWidth="3" />
+
+    <!-- 记忆条目 1（灰青） -->
+    <path
+        android:pathData="M36,45.5 L66,45.5"
+        android:strokeColor="#7E8C88"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+
+    <!-- 记忆条目 2（灰青） -->
+    <path
+        android:pathData="M36,55.5 L60,55.5"
+        android:strokeColor="#7E8C88"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+
+    <!-- 记忆条目 3（青色高亮） -->
+    <path
+        android:pathData="M36,65.5 L56,65.5"
+        android:strokeColor="#7FE7D9"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+</vector>
