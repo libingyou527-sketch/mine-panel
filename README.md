@@ -86,11 +86,11 @@
 ### 签名与仓库不含的内容
 
 - **签名密钥不进仓库**：release 签名配置读取本地 `keystore.properties`（指向 `app/keystore/release.keystore`），二者均被 `.gitignore` 忽略。克隆本仓库后若没有该文件，release 构建自动回退 debug 签名，仅用于本机调试；**对外分发前必须生成你自己的 release 密钥**并配置到 `keystore.properties`，密钥库离线备份、丢失后无法给老用户发更新。
-- **内置模型权重不进仓库**：`*.gguf` 被忽略，源码仓库不携带 468.6 MiB 的基线权重；开源克隆构建出的包不含内置模型，推理回退模板兜底，可在应用内自行选择本地 GGUF。权重许可登记见 [`NOTICE.md`](NOTICE.md)「内置模型权重（合规待办）」。
+- **内置模型权重不进仓库**：`*.gguf` 被忽略，源码仓库不携带 468.6 MiB 的基线权重；开源克隆构建出的包不含内置模型，推理回退模板兜底，可在应用内自行选择本地 GGUF。权重归属与许可见 [`NOTICE.md`](NOTICE.md)「内置模型权重」。
 - `local.properties`（SDK 路径、llama.cpp 源码路径）不提交；原生库需要本机一份 llama.cpp 源码目录，见上一节。
 
 ## 许可证
 
 - 项目主体：Apache-2.0（见 [`LICENSE`](LICENSE)）。许可证保持标准开源条款；“禁止监控他人”等用途约束以本 README 使用条款形式呈现，不并入许可证正文。
 - 第三方组件许可与归属：见 [`NOTICE.md`](NOTICE.md)（llama.cpp/MIT、SQLCipher、AndroidX、Kotlin 等）。
-- **内置 GGUF 权重的来源与许可尚待确认**；在发布带权重的分发包前，必须先在 NOTICE 中登记权重许可并确认允许再分发，详见 NOTICE「内置模型权重（合规待办）」。
+- 内置 GGUF 权重为 [Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct) 的 Q4_K_M 量化副本，Apache-2.0，Copyright 2024 Alibaba Cloud (Qwen Team)；归属、基线哈希与许可细节见 [`NOTICE.md`](NOTICE.md)「内置模型权重」。

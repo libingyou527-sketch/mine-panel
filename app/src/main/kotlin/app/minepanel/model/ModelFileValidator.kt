@@ -6,7 +6,7 @@ import java.security.MessageDigest
 
 /**
  * 本地 GGUF 模型文件校验：存在性、体积、SHA-256 基线比对。
- * 哈希不符或文件过小时拒绝加载；模型文件不进 APK、不下载、不上传。
+ * 哈希不符或文件过小时拒绝加载；模型随包内置在 assets，运行时不下载、不上传。
  */
 object ModelFileValidator {
 

@@ -27,14 +27,12 @@
 | MockK | 模拟依赖 | Apache-2.0 |
 | AndroidX Test / Espresso / Compose UI Test | instrumented 测试 | Apache-2.0 |
 
-## 内置模型权重（合规待办）
+## 内置模型权重
 
-- 基线 GGUF 权重位于 `app/src/main/assets/models/bundled-model.gguf`，**未纳入源码仓库**（`.gitignore` 忽略 `*.gguf`）。
-- **权重的上游来源、作者与许可证目前尚未登记确认**。在发布任何内置该权重的 APK / 分发包之前，必须：
-  1. 核实权重许可证允许随应用再分发；
-  2. 在本节补登权重名称、来源链接、作者与许可证；
-  3. 按权重许可证要求保留归属与声明文本。
-- 若权重许可不允许再分发，应改为：首次运行由用户自行放置本地 GGUF，或通过单独的许可渠道分发权重文件。
+- 内置副本：`app/src/main/assets/models/bundled-model.gguf`（GGUF Q4_K_M 量化），491,400,032 字节，SHA-256 `74A4DA8C9FDBCD15BD1F6D01D621410D31C6FC00986F5EB687824E7B93D7A9DB`。该文件**不纳入源码仓库**（`.gitignore` 忽略 `*.gguf`），仅随 APK 打包。
+- 底模：[Qwen/Qwen2.5-0.5B-Instruct](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct)；GGUF 量化参照官方仓 [Qwen/Qwen2.5-0.5B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF)。
+- 版权：Copyright 2024 Alibaba Cloud (Qwen Team)。
+- 许可证：**Apache-2.0**（Qwen2.5 系列中 0.5B 属 Apache-2.0，不在 3B/72B 专有许可之列）。随应用再分发时保留本归属声明与 Apache-2.0 许可文本；量化由 llama.cpp GGUF 工具生成。
 
 ## 许可全文索引
 
