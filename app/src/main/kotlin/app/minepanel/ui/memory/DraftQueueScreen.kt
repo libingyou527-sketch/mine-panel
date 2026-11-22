@@ -47,6 +47,7 @@ import app.minepanel.ui.settings.PluginSection
 import app.minepanel.ui.settings.ExportSection
 import app.minepanel.ui.settings.BackupSection
 import app.minepanel.ui.settings.RunStatusSection
+import app.minepanel.ui.settings.LicensesScreen
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -60,9 +61,11 @@ fun DraftQueueScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showFragmentForm by remember { mutableStateOf(false) }
     var showMilestoneForm by remember { mutableStateOf(false) }
+    var showLicenses by remember { mutableStateOf(false) }
 
     BackHandler {
         when {
+            showLicenses -> showLicenses = false
             showFragmentForm -> showFragmentForm = false
             showMilestoneForm -> showMilestoneForm = false
             else -> onBack()
@@ -142,6 +145,10 @@ fun DraftQueueScreen(
 
             item { BackupSection() }
 
+            item {
+                OutlinedButton(onClick = { showLicenses = true }) { Text("开源许可") }
+            }
+
             if (state.fragments.isNotEmpty()) {
                 item {
                     Text(
@@ -212,6 +219,10 @@ fun DraftQueueScreen(
                     )
                 }
             }
+        }
+
+        if (showLicenses) {
+            LicensesScreen(onBack = { showLicenses = false })
         }
     }
     }
