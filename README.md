@@ -5,8 +5,8 @@
 ## 下载安装
 
 - 预编译 APK：[`mine-panel-0.1.0.apk`](https://github.com/libingyou527-sketch/mine-panel/releases/download/v0.1.0/mine-panel-0.1.0.apk)（见 [Release 页面](https://github.com/libingyou527-sketch/mine-panel/releases/tag/v0.1.0)）。
-- 体积 520,296,119 字节（约 496.19 MiB），架构 `arm64-v8a` / `x86_64`，minSdk 26（Android 8.0 及以上）；包内已内置基线模型权重。
-- SHA-256：`1A7F3F5E6018A2AE0D2E0480787209B670A45EB239B3C21CF5BCB5313E979207`。
+- 体积 520,301,948 字节（约 496.20 MiB），架构 `arm64-v8a` / `x86_64`，minSdk 26（Android 8.0 及以上）；包内已内置基线模型权重。
+- SHA-256：`A48768E5A3DB78D0C8D815DA905775D3701E8A1215E780B8CADBF361A7E92C46`。
 - 首次安装需在系统设置中允许「此来源安装应用」；应用不上架应用商店，不联网、不含账号体系与广告 SDK。
 - 源码仓库不携带 APK 与模型权重；自行克隆构建见下方「构建（可复现）」。
 
