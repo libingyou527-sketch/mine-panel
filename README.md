@@ -95,7 +95,7 @@
 ### 签名与仓库不含的内容
 
 - **签名密钥不进仓库**：release 签名配置读取本地 `keystore.properties`（指向 `app/keystore/release.keystore`），二者均被 `.gitignore` 忽略。克隆本仓库后若没有该文件，release 构建自动回退 debug 签名，仅用于本机调试；**对外分发前必须生成你自己的 release 密钥**并配置到 `keystore.properties`，密钥库离线备份、丢失后无法给老用户发更新。
-- **内置模型权重不进仓库**：`*.gguf` 被忽略，源码仓库不携带 468.6 MiB 的基线权重。克隆源码后若要复现内置包，从本仓库 Releases 下载 `bundled-model.gguf`（491,400,032 字节，SHA-256 `74A4DA8C9FDBCD15BD1F6D01D621410D31C6FC00986F5EB687824E7B93D7A9DB`），放到 `app/src/main/assets/models/bundled-model.gguf` 再构建；未放置时构建仍可成功，包内不含内置模型，推理回退模板兜底，也可在应用内自选本地 GGUF。权重归属与许可见 [`NOTICE.md`](NOTICE.md)「内置模型权重」。
+- **内置模型权重不进仓库**：`*.gguf` 被忽略，源码仓库不携带 468.6 MiB 的基线权重。克隆源码后若要复现内置包，从 v0.1.0 Release 下载 [`bundled-model.gguf`](https://github.com/libingyou527-sketch/mine-panel/releases/download/v0.1.0/bundled-model.gguf)（491,400,032 字节，SHA-256 `74A4DA8C9FDBCD15BD1F6D01D621410D31C6FC00986F5EB687824E7B93D7A9DB`；v0.2.0 权重未变更，沿用该附件），放到 `app/src/main/assets/models/bundled-model.gguf` 再构建；未放置时构建仍可成功，包内不含内置模型，推理回退模板兜底，也可在应用内自选本地 GGUF。权重归属与许可见 [`NOTICE.md`](NOTICE.md)「内置模型权重」。
 - `local.properties`（SDK 路径、llama.cpp 源码路径）不提交；原生库需要本机一份 llama.cpp 源码目录，见上一节。
 
 ## 许可证
