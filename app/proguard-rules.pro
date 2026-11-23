@@ -14,3 +14,7 @@
 
 # Model draft JSON is hand-built/parsed (no reflection); kept for clarity.
 -keep class app.minepanel.model.ModelOutputJson { *; }
+
+# WorkManager instantiates workers by class name; keep the collector worker entries.
+-keep class app.minepanel.collector.*Worker { <init>(...); }
+-keep class app.minepanel.collector.NotificationMetaListener { <init>(); }

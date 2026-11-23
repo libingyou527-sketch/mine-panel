@@ -20,5 +20,11 @@ class SettingsSnapshotTest {
         assertNull(snapshot.modelFilePath)
         assertNull(snapshot.modelHash)
         assertNull(snapshot.baselineStartEpochDay)
+        assertFalse(snapshot.remoteModelEnabled)
+        assertTrue(snapshot.remoteBaseUrl.isEmpty())
+        assertTrue(snapshot.remoteModelName.isEmpty())
+        assertNull(snapshot.remoteApiKeyCipher)
+        assertTrue(snapshot.geofencePlaces.isEmpty())
+        assertTrue(snapshot.geofenceState.isEmpty())
     }
 }

@@ -21,6 +21,9 @@ import app.minepanel.model.ChatTurn
 import app.minepanel.model.EngineRouter
 import app.minepanel.model.InferenceEngine
 import app.minepanel.model.ModelOutputParser
+import app.minepanel.model.remote.RemoteChatClient
+import app.minepanel.model.remote.RemoteChatConfig
+import app.minepanel.model.remote.RemoteMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,7 +45,15 @@ data class ChatUiState(
     val importing: Boolean = false,
     val clearing: Boolean = false,
     val message: String? = null,
-    val messageIsError: Boolean = false
+    val messageIsError: Boolean = false,
+    /** 最近一次回复来源：remote=外部模型，local=内置模型，fallback=模板兜底。 */
+    val engineSource: String? = null,
+    val remoteEnabled: Boolean = false,
+    val remoteProvider: String = "custom",
+    val remoteBaseUrl: String = "",
+    val remoteModelName: String = "",
+    /** 是否已保存过 API Key（不明文回显）。 */
+    val remoteKeySet: Boolean = false
 )
 
 class ChatViewModel : AndroidViewModel {
@@ -110,13 +121,19 @@ class ChatViewModel : AndroidViewModel {
     }
 
     private suspend fun refreshAll(sessionId: Long) {
+        val settings = ServiceLocator.settings().settings.first()
         _state.update {
             it.copy(
                 sessions = sessionRepository.list(),
                 currentSessionId = sessionId,
                 messages = repository.list(sessionId),
                 memoryDrafts = memoryRepository.pendingDrafts(),
-                memories = memoryRepository.memories()
+                memories = memoryRepository.memories(),
+                remoteEnabled = settings.remoteModelEnabled,
+                remoteProvider = settings.remoteProvider,
+                remoteBaseUrl = settings.remoteBaseUrl,
+                remoteModelName = settings.remoteModelName,
+                remoteKeySet = !settings.remoteApiKeyCipher.isNullOrBlank()
             )
         }
     }
@@ -132,6 +149,46 @@ class ChatViewModel : AndroidViewModel {
 
     fun onInputChange(text: String) {
         _state.update { it.copy(input = text) }
+    }
+
+    /** 按快照构造远端客户端；未启用、Key 缺失/解密失败或配置不完整时返回 null，走本地降级。 */
+    private fun buildRemoteClient(snapshot: SettingsSnapshot): RemoteChatClient? {
+        if (!snapshot.remoteModelEnabled) return null
+        val key = ServiceLocator.settings().decryptRemoteApiKey(snapshot.remoteApiKeyCipher) ?: return null
+        val config = RemoteChatConfig(snapshot.remoteBaseUrl, key, snapshot.remoteModelName)
+        if (!config.isComplete) return null
+        return RemoteChatClient(config)
+    }
+
+    /**
+     * 保存外部模型配置。[apiKey] 为明文：留空且原本已存 Key 时保留旧密文；
+     * 留空且未存过则清除 Key。其余字段直接落偏好。
+     */
+    fun saveRemoteConfig(
+        enabled: Boolean,
+        provider: String,
+        baseUrl: String,
+        modelName: String,
+        apiKey: String?
+    ) {
+        viewModelScope.launch {
+            val preserveKey = apiKey.isNullOrBlank() && _state.value.remoteKeySet
+            ServiceLocator.settings().setRemoteModelConfig(
+                enabled = enabled,
+                provider = provider,
+                baseUrl = baseUrl,
+                modelName = modelName,
+                apiKeyPlain = apiKey,
+                preserveKey = preserveKey
+            )
+            refreshAll(_state.value.currentSessionId ?: return@launch)
+            val notice = if (enabled) {
+                "已保存外部模型：聊天将联网调用所选模型；网络不可用或调用失败时自动降级为内置模型。"
+            } else {
+                "已关闭外部模型，聊天仅使用内置模型，不联网。"
+            }
+            _state.update { it.copy(message = notice, messageIsError = false) }
+        }
     }
 
     /** 切换到指定会话，并持久化为当前会话。 */
@@ -191,16 +248,42 @@ class ChatViewModel : AndroidViewModel {
             val history = repository.list(current).map { turnOf(it) }
             val memoryTexts = memoryRepository.memories().map { it.content }
             val settings = ServiceLocator.settings().settings.first()
-            val reply = runCatching {
-                engineProvider(settings).chat(ChatPromptBuilder.buildChat(history, memoryTexts))
-            }.getOrElse { "" }
+
+            val remoteClient = buildRemoteClient(settings)
+            val remoteReply = if (remoteClient != null) runCatching {
+                val messages = buildList {
+                    add(RemoteMessage("system", ChatPromptBuilder.buildSystem(memoryTexts)))
+                    history.forEach { turn ->
+                        add(
+                            RemoteMessage(
+                                if (turn.role == ChatRole.ASSISTANT) "assistant" else "user",
+                                turn.content
+                            )
+                        )
+                    }
+                }
+                remoteClient.chat(messages)
+            }.getOrNull() else null
+
+            val source: String
+            val reply: String
+            if (!remoteReply.isNullOrBlank()) {
+                reply = remoteReply
+                source = "remote"
+            } else {
+                val localReply = runCatching {
+                    engineProvider(settings).chat(ChatPromptBuilder.buildChat(history, memoryTexts))
+                }.getOrElse { "" }
+                reply = localReply
+                source = if (localReply.isBlank()) "fallback" else "local"
+            }
             val finalReply = reply.ifBlank { FALLBACK_REPLY }
 
             repository.add(ChatRole.ASSISTANT, finalReply, current)
             sessionRepository.touch(current, System.currentTimeMillis())
             autoTitleIfDefault(current, userText)
             refreshAll(current)
-            _state.update { it.copy(sending = false) }
+            _state.update { it.copy(sending = false, engineSource = source) }
         }
     }
 

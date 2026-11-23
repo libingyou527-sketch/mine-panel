@@ -92,6 +92,18 @@ class KeyStoreManager(private val context: Context) {
         return cipher.doFinal(ct)
     }
 
+    /** 加密一段 UTF-8 字符串，返回 Base64 密文；明文不落地。用于外部模型 API Key 等本地凭据。 */
+    fun wrapString(plain: String): String {
+        val wrapped = wrap(plain.toByteArray(Charsets.UTF_8))
+        return Base64.encodeToString(wrapped, Base64.NO_WRAP)
+    }
+
+    /** 解开 [wrapString] 产出的 Base64 密文；包装失效时抛异常，由上层按不可用处理。 */
+    fun unwrapString(wrappedBase64: String): String {
+        val bytes = Base64.decode(wrappedBase64.trim(), Base64.NO_WRAP)
+        return String(unwrap(bytes), Charsets.UTF_8)
+    }
+
     /** 撤销密钥并删除包装文件；下次取口令时生成全新密钥与随机口令。 */
     fun reset() {
         if (keyStore.containsAlias(ALIAS)) {

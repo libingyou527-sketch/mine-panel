@@ -5,6 +5,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,7 +22,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,9 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.minepanel.core.model.ChatRole
+import app.minepanel.model.remote.RemoteProviders
 import app.minepanel.data.db.entity.ChatMessage
 import app.minepanel.data.db.entity.ChatMemory
 import app.minepanel.data.db.entity.ChatMemoryDraft
@@ -50,6 +56,7 @@ fun ChatScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showMemories by remember { mutableStateOf(false) }
     var showSessions by remember { mutableStateOf(false) }
+    var showModelSettings by remember { mutableStateOf(false) }
     var showClearConfirm by remember { mutableStateOf(false) }
     var renamingId by remember { mutableStateOf<Long?>(null) }
     var renameText by remember { mutableStateOf("") }
@@ -109,6 +116,7 @@ fun ChatScreen(
                     modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.End
                 ) {
+                    TextButton(onClick = { showModelSettings = true }) { Text("设置") }
                     TextButton(onClick = {
                         showSessions = !showSessions
                         showMemories = false
@@ -165,6 +173,18 @@ fun ChatScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = if (state.messageIsError) MaterialTheme.colorScheme.error
                     else MaterialTheme.colorScheme.primary
+                )
+            }
+
+            state.engineSource?.let { source ->
+                Text(
+                    text = when (source) {
+                        "remote" -> "当前回复来自外部模型（联网）"
+                        "local" -> "当前回复来自内置模型"
+                        else -> "内置模型暂不可用，已用模板兜底"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -243,6 +263,17 @@ fun ChatScreen(
         }
     }
 
+    if (showModelSettings) {
+        ModelSettingsDialog(
+            state = state,
+            onSave = { enabled, provider, baseUrl, modelName, apiKey ->
+                viewModel.saveRemoteConfig(enabled, provider, baseUrl, modelName, apiKey)
+                showModelSettings = false
+            },
+            onDismiss = { showModelSettings = false }
+        )
+    }
+
     if (showClearConfirm) {
         AlertDialog(
             onDismissRequest = { if (!state.clearing) showClearConfirm = false },
@@ -312,6 +343,91 @@ fun ChatScreen(
             }
         )
     }
+}
+
+@Composable
+private fun ModelSettingsDialog(
+    state: ChatUiState,
+    onSave: (enabled: Boolean, provider: String, baseUrl: String, modelName: String, apiKey: String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var enabled by remember { mutableStateOf(state.remoteEnabled) }
+    var provider by remember { mutableStateOf(state.remoteProvider) }
+    var baseUrl by remember { mutableStateOf(state.remoteBaseUrl) }
+    var modelName by remember { mutableStateOf(state.remoteModelName) }
+    var apiKey by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("模型设置") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Switch(checked = enabled, onCheckedChange = { enabled = it })
+                    Text("启用外部大模型（需联网）")
+                }
+                Text(
+                    "启用后，对话内容会发送到你填写的第三方模型服务；关闭、未配置完整或网络/调用失败时，自动降级为本地内置模型，不发起联网请求。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                RemoteProviders.presets.forEach { preset ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        RadioButton(
+                            selected = provider == preset.id,
+                            onClick = {
+                                provider = preset.id
+                                if (preset.id != "custom") {
+                                    baseUrl = preset.baseUrl
+                                    modelName = preset.defaultModel
+                                }
+                            }
+                        )
+                        Text(preset.label, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+                OutlinedTextField(
+                    value = baseUrl,
+                    onValueChange = { baseUrl = it },
+                    label = { Text("接口地址 Base URL") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = modelName,
+                    onValueChange = { modelName = it },
+                    label = { Text("模型名") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = apiKey,
+                    onValueChange = { apiKey = it },
+                    label = {
+                        Text(if (state.remoteKeySet) "API Key（已保存，留空不修改）" else "API Key")
+                    },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onSave(enabled, provider, baseUrl, modelName, apiKey.ifBlank { null })
+            }) { Text("保存") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+    )
 }
 
 @Composable

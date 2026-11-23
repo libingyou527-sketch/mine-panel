@@ -18,13 +18,18 @@ class PluginCatalogTest {
     }
 
     @Test
-    fun placeholdersAreNotImplementedAndDescribeRisk() {
+    fun descriptorsDescribeRiskAndImplementationState() {
         PluginCatalog.all.forEach { descriptor ->
-            assertFalse("${descriptor.type} 阶段5 应为占位", descriptor.implemented)
             assertTrue(descriptor.title.isNotBlank())
             assertTrue(descriptor.description.isNotBlank())
             assertTrue(descriptor.riskLabel.isNotBlank())
         }
+        // 健康连接受系统 SDK 版本限制，本期仍为占位；其余插件已接入采集。
+        assertFalse(PluginCatalog.byType(PluginType.HEALTH_CONNECT).implemented)
+        assertTrue(PluginCatalog.byType(PluginType.NOTIFICATION_META).implemented)
+        assertTrue(PluginCatalog.byType(PluginType.CALENDAR).implemented)
+        assertTrue(PluginCatalog.byType(PluginType.CALL_LOG).implemented)
+        assertTrue(PluginCatalog.byType(PluginType.GEOFENCE).implemented)
     }
 
     @Test

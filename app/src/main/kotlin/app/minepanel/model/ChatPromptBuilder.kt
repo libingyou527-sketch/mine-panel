@@ -59,6 +59,18 @@ object ChatPromptBuilder {
     /** 提炼要点时回放给模型的历史 token 预算。 */
     private const val EXTRACTION_HISTORY_TOKEN_BUDGET = 1000
 
+    /** 组装 system 段文本：基础助手约束 + 已采纳长期记忆背景；供本地 ChatML 与远端 messages 复用。 */
+    fun buildSystem(memories: List<String> = emptyList()): String {
+        val items = memories.map { it.trim() }.filter { it.isNotEmpty() }.distinct().take(MAX_MEMORY_ITEMS)
+        return buildString {
+            append(SYSTEM_PROMPT)
+            if (items.isNotEmpty()) {
+                append("\n已知背景（本人确认过的要点，相关时可参考，不要原样复述）：")
+                items.forEach { append("\n- ").append(it) }
+            }
+        }
+    }
+
     /** 装配闲聊提示词：[memories] 为已采纳的长期记忆要点，作为背景附在 system 段。 */
     fun buildChat(messages: List<ChatTurn>, memories: List<String> = emptyList()): String {
         val memoryItems = selectMemories(memories)

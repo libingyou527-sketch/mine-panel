@@ -24,8 +24,8 @@ object ServiceLocator {
     @Synchronized
     fun init(context: Context) {
         val appContext = context.applicationContext
-        if (settingsStore == null) settingsStore = SettingsStore(appContext)
         if (keyStoreManager == null) keyStoreManager = KeyStoreManager(appContext)
+        if (settingsStore == null) settingsStore = SettingsStore(appContext, keyStoreManager)
         if (database == null && !storageInvalid) {
             try {
                 val passphrase = keyStoreManager!!.getOrCreatePassphrase()

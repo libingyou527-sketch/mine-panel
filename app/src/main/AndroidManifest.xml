@@ -15,22 +15,31 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--
+      外部（联网）大模型：仅在用户于聊天页显式启用并填好接口/Key 后才发起请求；
+      未启用或调用失败时不联网、降级内置模型。不读取网络状态。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      可选插件敏感权限：对应插件默认关闭，仅在用户开启并授予权限后采集；
+      未授权时查询结果为空，不抛错、不写敏感内容。
+    -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+    <!--
       移除 WorkManager(work-runtime) 传递声明的权限：
-      - ACCESS_NETWORK_STATE：红线，本应用不读取网络状态，强制移除。
+      - ACCESS_NETWORK_STATE：不读取网络状态，强制移除。
       - RECEIVE_BOOT_COMPLETED：MVP 不做开机自启/开机恢复；重启后任务由下次应用启动时恢复。
-      WAKE_LOCK 为后台任务本地执行所需，予以保留（不联网），审计见 sbom/dependencies.md。
+      WAKE_LOCK 为后台任务本地执行所需，予以保留，审计见 sbom/dependencies.md。
     -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove" />
 
-    <!--
-      红线：以下权限在本清单中一律不声明，代码中也不请求：
-      INTERNET / ACCESS_NETWORK_STATE / CAMERA / RECORD_AUDIO /
-      READ_SMS / READ_CONTACTS / READ_CALL_LOG（未启用插件时）/
-      无障碍服务 / 截图 / 剪贴板读取。
-      阶段 5 可选插件仅为本地开关占位：不注册采集组件、不申请对应权限、不写插件事件表；
-      各插件的组件与敏感权限在其真实采集落地阶段再逐项引入，且默认关闭。
-    -->
+    <!-- 以下权限仍一律不声明、代码中也不请求：CAMERA / RECORD_AUDIO / READ_SMS / READ_CONTACTS / 无障碍服务 / 截图 / 剪贴板读取。 -->
 
     <application
         android:name=".MinePanelApp"
@@ -58,6 +67,17 @@
             android:name=".service.RecordingService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- 通知元数据插件：系统绑定的监听服务，仅取包名/频道/时间戳，不读通知正文。 -->
+        <service
+            android:name=".collector.NotificationMetaListener"
+            android:exported="true"
+            android:label="通知元数据采集"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
 
     </application>
 

@@ -17,6 +17,8 @@
 | com.squareup.okio:okio-jvm（DataStore 传递） | 本地文件/字节缓冲 IO | 否 | 否 | 否 | 通过；不含 HTTP 客户端 |
 | com.google.guava:listenablefuture（Core 传递） | 仅 Future 回调接口 | 否 | 否 | 否 | 通过 |
 
+> v0.2.0 远程聊天通道**不引入任何第三方网络库**：HTTP 请求由 JDK 内置 `java.net.HttpURLConnection` 手写，请求体手写 JSON、响应经既有 `MiniJson` 解析；未引入 OkHttp / Retrofit / gRPC / Ktor 等。该通道仅在用户显式启用外部模型且配置完整时调用。
+
 ## 编译期 / 注解处理
 
 | 依赖 | 用途 | 说明 |
@@ -43,7 +45,9 @@
 | `WAKE_LOCK` | work-runtime 2.10.0 传递 | 保留 | 后台任务本地执行期间持有 CPU 唤醒锁，不联网；无网络能力 |
 | `app.minepanel.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | androidx 生成的自定义权限 | 保留 | 运行时广播隔离用途，非系统权限 |
 
-> 阶段 0 实测 APK 权限清单：`PACKAGE_USAGE_STATS`、`FOREGROUND_SERVICE`、`FOREGROUND_SERVICE_DATA_SYNC`、`POST_NOTIFICATIONS`、`WAKE_LOCK`、上述自定义权限；**无 `INTERNET`、无 `ACCESS_NETWORK_STATE`**。
+> 阶段 0 实测 APK 权限清单：`PACKAGE_USAGE_STATS`、`FOREGROUND_SERVICE`、`FOREGROUND_SERVICE_DATA_SYNC`、`POST_NOTIFICATIONS`、`WAKE_LOCK`、上述自定义权限；**无 `ACCESS_NETWORK_STATE`**。
+>
+> v0.2.0 起新增可选权限（见下「APK 权限与组件」）：`INTERNET`（仅外部模型聊天通道）、`READ_CALENDAR`、`READ_CALL_LOG`、`ACCESS_FINE/COARSE/BACKGROUND_LOCATION`；仍**不申请** `ACCESS_NETWORK_STATE`、相机、麦克风、短信、联系人、无障碍、剪贴板读取。
 
 ## 审计规则
 
@@ -114,6 +118,12 @@
 - **回顾文案口径与独立导出段（#59）**：仅 `MEMORY` 写正式记忆表，标签/叙述只置草案已确认状态；导出/导入复用既有手写 JSON 序列化/解析与 SAF 链路，新增 `narratives` 可选段（旧包缺失按空列表兼容），**未引入新依赖/权限/组件/数据库表**。
 - 本轮未新增任何第三方库；运行时坐标集合与依赖树结论不变（androidx / Kotlin / coroutines + guava listenablefuture + okio-jvm + sqlcipher-android），无 Firebase / 网络 / 遥测 / 广告归因库。
 
+### v0.2.0 增强复核（2026-11-23，外部模型接入 + 插件采集落地）
+
+- **外部（联网）聊天模型**：`model/remote/` 下 `RemoteProviders`（预置 DeepSeek/通义/Kimi/智谱/OpenRouter/OpenAI 模板与自定义）、`RemoteChatConfig`（三项齐全才视为可调用）、`RemoteChatClient`（JDK `HttpURLConnection`，30s 超时，手写 JSON 请求体，`MiniJson` 解析 `choices[0].message.content`）。**未引入 OkHttp/Retrofit/Ktor/gRPC 等任何第三方网络库**；运行时坐标集合无变化。API Key 经 `KeyStoreManager.wrapString` AES-GCM 包装后存 DataStore 密文，明文只在内存；未启用/配置不全/解密失败/网络异常/空回复时自动降级本地 GGUF，再不可用落模板兜底。面板回顾等其他推理通道仍只走本地。
+- **插件真实采集（4 项接入，1 项保留占位）**：通知元数据 `NotificationMetaListener`（包名/频道/时间戳）、日历 `CalendarCollectWorker`（起止时间）、通话日志 `CallLogCollectWorker`（方向/时长/日期，号码 SHA-256 截断 12 位）、地理围栏 `GeofenceCollectWorker`（最近定位比对常去点半径，仅 enter/leave 离散事件）；写入既有 `plugin_events` 表，未新增数据库结构。各 Worker/服务先读插件开关与系统权限，关闭或未授权静默跳过。健康连接未引入 `androidx.health.connect`（compileSdk 35 / AGP 8.7.3 与 connect-client 1.1.0+ 不兼容），保留 `implemented=false` 占位与禁用开关，未声明对应健康权限。
+- **依赖/权限/组件**：未新增 Maven 运行时依赖；新增 `INTERNET` 与日历/通话/定位可选权限、一个通知监听服务；采集与聚合任务仍由既有 WorkManager 调度。运行时不读取网络状态（`ACCESS_NETWORK_STATE` 仍被 `tools:node="remove"`）。
+
 ### 依赖树（`gradle :app:dependencies --configuration debugRuntimeClasspath`）
 
 - 运行时坐标全部为 androidx / JetBrains Kotlin / kotlinx-coroutines；第三方仅 `com.google.guava:listenablefuture:1.0`、`com.squareup.okio:okio-jvm:3.4.0`、`net.zetetic:sqlcipher-android:4.6.1`。
@@ -121,14 +131,14 @@
 
 ### APK 权限与组件（`aapt2 dump permissions / badging / xmltree`）
 
-- 声明权限：`PACKAGE_USAGE_STATS`、`FOREGROUND_SERVICE`、`FOREGROUND_SERVICE_DATA_SYNC`、`POST_NOTIFICATIONS`、`WAKE_LOCK`，以及 androidx 生成的 `app.minepanel.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`。**无 `INTERNET`、无 `ACCESS_NETWORK_STATE`、无 `RECEIVE_BOOT_COMPLETED`、无通话/日历/位置/相机/麦克风权限。**
-- 自有组件：`MainActivity`（启动器）、`RecordingService`（`exported=false`）。
+- 声明权限：`PACKAGE_USAGE_STATS`、`FOREGROUND_SERVICE`、`FOREGROUND_SERVICE_DATA_SYNC`、`POST_NOTIFICATIONS`、`WAKE_LOCK`，以及 androidx 生成的 `app.minepanel.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`。v0.2.0 另声明 `INTERNET`（仅外部模型聊天通道）、`READ_CALENDAR`、`READ_CALL_LOG`、`ACCESS_FINE_LOCATION`、`ACCESS_COARSE_LOCATION`、`ACCESS_BACKGROUND_LOCATION`（均为可选插件，默认关闭、逐项授权）。**仍无 `ACCESS_NETWORK_STATE`、无 `RECEIVE_BOOT_COMPLETED`、无相机/麦克风/短信/联系人/无障碍/剪贴板权限。**
+- 自有组件：`MainActivity`（启动器）、`RecordingService`（`exported=false`）、`NotificationMetaListener`（通知监听服务，`exported=true` 但受 `BIND_NOTIFICATION_LISTENER_SERVICE` 系统权限保护，仅取包名/频道/时间戳）。
 - WorkManager / Room 传递组件：`SystemAlarmService`、`SystemJobService`（`BIND_JOB_SERVICE`）、`SystemForegroundService`、各约束 `ConstraintProxy`、`RescheduleReceiver`、Room 失效服务等，均 `exported=false`；`DiagnosticsReceiver`、`ProfileInstallReceiver` 虽 `exported=true`，但受系统 `android.permission.DUMP` 保护，普通三方应用无法调用。
 - RescheduleReceiver 虽注册 `BOOT_COMPLETED` 意图，但清单未声明 `RECEIVE_BOOT_COMPLETED`，收不到开机广播，符合"不做隐蔽自启"。
 
 ### 网络相关类/字符串扫描
 
-- 应用源码（`app/src/main`）无 `HttpURLConnection` / `URLConnection` / `okhttp` / `Socket` / `Retrofit` / `openConnection` 等调用。
+- 应用源码（`app/src/main`）的网络调用仅有远程聊天通道一处：JDK 内置 `java.net.HttpURLConnection.openConnection()`，`POST` 到用户在设置中自填的 OpenAI 兼容端点；**无** `okhttp` / `Retrofit` / `Socket` / gRPC / Ktor 等第三方网络栈，无遥测/统计/远程配置硬编码域名。
 - dex 内 URL 仅为 XML 命名空间、SVG schema 与 AndroidX/JetBrains 库文档/issue 链接，无业务域名或遥测端点。
 - 原生库动态依赖（`llvm-readelf -d`）：`libminepanel-llama.so` 仅 NEEDED `libandroid / liblog / libm / libdl / libc`，**不链接 libcurl**；`libsqlcipher.so` 仅 NEEDED `libdl / liblog / libc / libm`。so 内 `http(s)://` 字符串为工具链与源码 issue 注释，`getaddrinfo`/`curl` 为未引用符号残留；清单无 `INTERNET` 权限，运行时网络访问被系统门禁。
 

@@ -7,6 +7,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import app.minepanel.aggregate.AggregateWorker
 import app.minepanel.aggregate.InferenceWorker
+import app.minepanel.collector.CalendarCollectWorker
+import app.minepanel.collector.CallLogCollectWorker
+import app.minepanel.collector.GeofenceCollectWorker
 import app.minepanel.collector.UsageCollectWorker
 import java.util.concurrent.TimeUnit
 
@@ -38,6 +41,30 @@ object WorkScheduler {
             InferenceWorker.WORK_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
             inferenceRequest
+        )
+
+        val calendarRequest = PeriodicWorkRequestBuilder<CalendarCollectWorker>(24, TimeUnit.HOURS)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            CalendarCollectWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            calendarRequest
+        )
+
+        val callLogRequest = PeriodicWorkRequestBuilder<CallLogCollectWorker>(24, TimeUnit.HOURS)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            CallLogCollectWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            callLogRequest
+        )
+
+        val geofenceRequest = PeriodicWorkRequestBuilder<GeofenceCollectWorker>(30, TimeUnit.MINUTES)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            GeofenceCollectWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            geofenceRequest
         )
     }
 

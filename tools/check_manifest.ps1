@@ -12,18 +12,28 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# 绝对红线：任何版本都不声明、代码中也不请求。
 $redlinePermissions = @(
-    'android.permission.INTERNET',
     'android.permission.ACCESS_NETWORK_STATE',
     'android.permission.ACCESS_WIFI_STATE',
     'android.permission.CAMERA',
     'android.permission.RECORD_AUDIO',
     'android.permission.READ_SMS',
     'android.permission.READ_CONTACTS',
-    'android.permission.READ_CALL_LOG',
     'android.permission.BIND_ACCESSIBILITY_SERVICE',
     'android.permission.READ_CLIPBOARD',
     'android.permission.WRITE_EXTERNAL_STORAGE'
+)
+
+# 按需授权权限：仅在用户显式启用对应功能/插件时使用；
+# INTERNET 仅用于聊天外部模型；READ_CALL_LOG/READ_CALENDAR/定位 仅用于对应插件。
+$onDemandPermissions = @(
+    'android.permission.INTERNET',
+    'android.permission.READ_CALL_LOG',
+    'android.permission.READ_CALENDAR',
+    'android.permission.ACCESS_FINE_LOCATION',
+    'android.permission.ACCESS_COARSE_LOCATION',
+    'android.permission.ACCESS_BACKGROUND_LOCATION'
 )
 
 if (-not (Test-Path -LiteralPath $ManifestPath)) {
