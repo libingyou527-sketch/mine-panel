@@ -9,6 +9,7 @@ import app.minepanel.data.repository.ReviewSummary
 import app.minepanel.model.InferenceEngine
 import app.minepanel.model.ModelInput
 import app.minepanel.model.ModelOutput
+import app.minepanel.model.SchemaValidationException
 import app.minepanel.model.TemplateFallbackEngine
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -60,15 +61,15 @@ class ReviewGeneratorTest {
     }
 
     @Test
-    fun `invalid output exception falls back to template`() = runBlocking {
+    fun `schema rejected output falls back to template with fallback status`() = runBlocking {
         val engine = mockk<InferenceEngine>()
         coEvery { engine.engineName } returns "gguf"
-        coEvery { engine.infer(any()) } throws IllegalStateException("schema 校验不过")
+        coEvery { engine.infer(any()) } throws SchemaValidationException("schema 校验不过")
         val generator = ReviewGenerator({ engine })
 
         val result = generator.generate(summary(), settings)
 
-        assertEquals(ModelStatus.ERROR, result.status)
+        assertEquals(ModelStatus.FALLBACK_TEMPLATE, result.status)
         assertEquals("gguf", result.engineName)
         assertEquals("template", result.output.engineName)
         assertTrue(result.output.panelNarrative.isNotBlank())
@@ -95,6 +96,44 @@ class ReviewGeneratorTest {
 
         assertEquals(ModelStatus.FALLBACK_TEMPLATE, result.status)
         assertEquals("template", result.engineName)
+    }
+
+    @Test
+    fun `empty window short-circuits to template without calling model`() = runBlocking {
+        val engine = mockk<InferenceEngine>()
+        coEvery { engine.engineName } returns "gguf"
+        val generator = ReviewGenerator({ engine })
+        val emptySummary = ReviewSummary(
+            window = window,
+            sampleDays = 0,
+            totalScreenTimeMin = 0,
+            categoryMinutes = emptyMap(),
+            scores = AttributeKey.entries.associateWith { 0 },
+            memoryCount = 0,
+            memoryHighlights = emptyList(),
+            fragmentCount = 0,
+            fragmentHighlights = emptyList()
+        )
+
+        val result = generator.generate(emptySummary, settings)
+
+        assertEquals(ModelStatus.FALLBACK_TEMPLATE, result.status)
+        assertEquals("template", result.engineName)
+        assertTrue(result.output.panelNarrative.isNotBlank())
+        io.mockk.coVerify(exactly = 0) { engine.infer(any()) }
+    }
+
+    @Test
+    fun `unexpected throwable keeps error status`() = runBlocking {
+        val engine = mockk<InferenceEngine>()
+        coEvery { engine.engineName } returns "gguf"
+        coEvery { engine.infer(any()) } throws RuntimeException("native crash")
+        val generator = ReviewGenerator({ engine })
+
+        val result = generator.generate(summary(), settings)
+
+        assertEquals(ModelStatus.ERROR, result.status)
+        assertEquals("gguf", result.engineName)
     }
 
     @Test

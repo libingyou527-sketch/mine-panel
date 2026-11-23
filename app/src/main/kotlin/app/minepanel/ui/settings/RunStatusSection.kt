@@ -60,7 +60,7 @@ fun RunStatusSection(
                 )
             } else {
                 Text(
-                    "尚未运行过本地推理；生成一次后这里会显示结果状态、引擎与耗时。",
+                    "尚未运行过内置模型推理；生成一次后这里会显示结果状态、引擎与耗时。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -78,7 +78,7 @@ private fun statusLabel(status: String): String = when (status) {
 }
 
 private fun engineLabel(engine: String): String = when (engine) {
-    "gguf" -> "本地模型"
+    "gguf" -> "内置模型"
     "template" -> "模板"
     else -> engine.ifBlank { "未知引擎" }
 }

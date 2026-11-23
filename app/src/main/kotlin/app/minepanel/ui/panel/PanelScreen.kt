@@ -233,15 +233,18 @@ fun PanelScreen(
     }
 
     if (state.showFallbackNotice) {
+        val noticeText = when (state.fallbackNoticeStatus) {
+            "TIMEOUT" -> "内置模型响应超时，本次回顾由内置兜底模板生成，" +
+                "内容尚未自动入库。请到草案队列人工确认。"
+            "ERROR" -> "内置模型运行出现异常，本次回顾由内置兜底模板生成，" +
+                "内容尚未自动入库。请到草案队列人工确认。"
+            else -> "本次内置模型未产出有效回顾，已由内置兜底模板生成，" +
+                "内容尚未自动入库。请到草案队列人工确认。"
+        }
         AlertDialog(
             onDismissRequest = { panelViewModel.dismissFallbackNotice() },
             title = { Text("本次为兜底回顾") },
-            text = {
-                Text(
-                    "本地模型暂不可用（超时或内存不足），本次回顾由内置兜底模板生成，" +
-                        "内容尚未自动入库。请到草案队列人工确认。"
-                )
-            },
+            text = { Text(noticeText) },
             confirmButton = {
                 TextButton(onClick = {
                     panelViewModel.dismissFallbackNotice()

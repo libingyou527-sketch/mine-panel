@@ -19,7 +19,12 @@ data class ModelInput(
     val fragmentCount: Int = 0,
     /** 截断后的记忆/片段要点；不含正文全文与原始事件。 */
     val highlights: List<String> = emptyList()
-)
+) {
+    /** 窗口内没有任何可用样本（天数/时长/记忆/片段/要点皆空），模型无内容可总结，应直接模板兜底。 */
+    fun isEmptyWindow(): Boolean =
+        sampleDays <= 0 && memoryCount <= 0 && fragmentCount <= 0 &&
+            totalScreenTimeMin <= 0 && highlights.isEmpty()
+}
 
 /** 经 schema 校验后的模型输出草案；模型不得回写分值，也不得产出诊断结论。 */
 data class ModelOutput(

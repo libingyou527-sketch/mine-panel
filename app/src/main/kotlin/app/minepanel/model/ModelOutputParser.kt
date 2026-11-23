@@ -83,6 +83,7 @@ object ModelOutputParser {
         val t = text.trim()
         if (t.isBlank()) return false
         if (t in PLACEHOLDER_TEXTS) return false
+        if (t.contains('<') || t.contains('>')) return false
         if (t.contains('{') || t.contains('}')) return false
         if (DATA_KEYS.any { t.contains(it) }) return false
         if (FIELD_NAMES.any { t.contains(it) }) return false

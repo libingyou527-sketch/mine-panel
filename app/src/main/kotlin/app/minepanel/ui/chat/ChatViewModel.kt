@@ -326,6 +326,6 @@ class ChatViewModel : AndroidViewModel {
     )
 
     companion object {
-        private const val FALLBACK_REPLY = "本地模型暂不可用，这次先不展开回复，稍后再试。"
+        private const val FALLBACK_REPLY = "内置模型暂不可用，这次先不展开回复，稍后再试。"
     }
 }

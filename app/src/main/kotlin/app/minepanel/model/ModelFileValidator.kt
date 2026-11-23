@@ -14,7 +14,14 @@ object ModelFileValidator {
     const val BASELINE_SHA256 =
         "74A4DA8C9FDBCD15BD1F6D01D621410D31C6FC00986F5EB687824E7B93D7A9DB"
 
+    /** 内置基线模型的可读展示名。 */
+    const val BUNDLED_DISPLAY_NAME = "Qwen2.5-0.5B-Instruct（Q4_K_M）"
+
     private const val MIN_SIZE_BYTES = 100_000_000L
+
+    /** 传入哈希是否与随包内置基线一致（不区分大小写）。 */
+    fun isBaseline(hash: String?): Boolean =
+        hash != null && hash.equals(BASELINE_SHA256, ignoreCase = true)
 
     fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")

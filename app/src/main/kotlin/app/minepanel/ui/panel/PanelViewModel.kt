@@ -37,6 +37,7 @@ data class PanelUiState(
     val lastWeekHasData: Boolean = false,
     val selectedKey: AttributeKey? = null,
     val showFallbackNotice: Boolean = false,
+    val fallbackNoticeStatus: String = "",
     val loading: Boolean = true
 )
 
@@ -47,6 +48,7 @@ class PanelViewModel(app: Application) : AndroidViewModel(app) {
         aggregateDao = ServiceLocator.database().dailyAggregateDao(),
         badgeDao = ServiceLocator.database().badgeDao()
     )
+    private val runLogDao = ServiceLocator.database().modelRunLogDao()
 
     private val _state = MutableStateFlow(PanelUiState())
     val state: StateFlow<PanelUiState> = _state.asStateFlow()
@@ -69,6 +71,7 @@ class PanelViewModel(app: Application) : AndroidViewModel(app) {
             val avg = PanelScoring.average(data.currentWeekScores)
             val level = PanelScoring.levelOf(avg)
             val settings = ServiceLocator.settings().settings.first()
+            val latestRun = runLogDao.recent(1).firstOrNull()
             _state.value = _state.value.copy(
                 isBaseline = data.isBaseline,
                 currentWeekScores = data.currentWeekScores,
@@ -82,6 +85,7 @@ class PanelViewModel(app: Application) : AndroidViewModel(app) {
                 lastWeekHasData = data.lastWeekHasData,
                 selectedKey = _state.value.selectedKey,
                 showFallbackNotice = settings.fallbackNoticePending,
+                fallbackNoticeStatus = latestRun?.status ?: "",
                 loading = false
             )
         }

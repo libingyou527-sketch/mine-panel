@@ -3,7 +3,7 @@ package app.minepanel.model
 import app.minepanel.core.model.ModelStatus
 
 /**
- * 本地 GGUF 推理引擎封装（JNI）。
+ * 内置 GGUF 推理引擎封装（JNI）。
  * 原生库不可用、模型校验失败、内存不足或推理抛 OOM 时，由上层路由卸载并回退模板。
  * 模型文件只在私有目录本地读取，不联网、不上传。
  */
@@ -35,7 +35,7 @@ class GgufInferenceEngine(private val modelPath: String) : InferenceEngine {
             throw oom
         }
         val parsed = ModelOutputParser.parse(raw)
-            ?: throw IllegalStateException("模型输出未通过 schema 校验")
+        if (parsed == null) throw SchemaValidationException("模型输出未通过 schema 校验")
         return ModelOutput(
             panelNarrative = parsed.narrative,
             statusTags = parsed.tags,

@@ -74,6 +74,12 @@ class ModelOutputParserTest {
     }
 
     @Test
+    fun `rejects placeholder angle brackets not replaced`() {
+        val raw = """{"panelNarrative":"<回顾文案>","statusTags":[],"draftMemories":[]}"""
+        assertNull(ModelOutputParser.parse(raw))
+    }
+
+    @Test
     fun `rejects field name echoed as narrative`() {
         val raw = """{"panelNarrative":"见 panelNarrative 字段","statusTags":[],"draftMemories":[]}"""
         assertNull(ModelOutputParser.parse(raw))

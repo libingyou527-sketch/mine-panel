@@ -1,6 +1,7 @@
 package app.minepanel.aggregate
 
 import android.content.Context
+import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import app.minepanel.core.ServiceLocator
@@ -12,6 +13,7 @@ import app.minepanel.model.GgufInferenceEngine
 import app.minepanel.model.ModelOutput
 import app.minepanel.model.ModelOutputJson
 import app.minepanel.model.ModelSnapshotHasher
+import app.minepanel.model.SchemaValidationException
 import app.minepanel.model.TemplateFallbackEngine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -39,28 +41,41 @@ class InferenceWorker(
             ).assemble(from, now)
             val inputHash = ModelSnapshotHasher.hash(input)
 
-            val engine = EngineRouter(context).select(settings)
+            // 空窗口：没有任何可总结的样本，不加载/调用模型，直接模板兜底。
+            val engine = if (input.isEmptyWindow()) null else EngineRouter(context).select(settings)
             val startedAt = System.currentTimeMillis()
             var status = ModelStatus.SUCCESS
             var output: ModelOutput? = null
 
-            try {
-                output = withTimeoutOrNull(TIMEOUT_MS) { engine.infer(input) }
-                if (output == null) status = ModelStatus.TIMEOUT
-            } catch (oom: OutOfMemoryError) {
-                status = ModelStatus.ERROR
-                releaseEngine(engine)
-            } catch (t: Throwable) {
-                status = ModelStatus.ERROR
-                releaseEngine(engine)
-            }
-
-            // 超时 / OOM / 异常：回退模板降级，草案仍进入待确认队列。
-            if (output == null) {
+            if (engine == null) {
                 output = TemplateFallbackEngine().infer(input)
-                if (status == ModelStatus.SUCCESS) status = ModelStatus.FALLBACK_TEMPLATE
-            } else if (engine is TemplateFallbackEngine) {
                 status = ModelStatus.FALLBACK_TEMPLATE
+            } else {
+                try {
+                    output = withTimeoutOrNull(TIMEOUT_MS) { engine.infer(input) }
+                    if (output == null) status = ModelStatus.TIMEOUT
+                } catch (e: SchemaValidationException) {
+                    // 输出不合规属预期降级，回退模板并记模板降级，不记为崩溃错误。
+                    status = ModelStatus.FALLBACK_TEMPLATE
+                    Log.e("InferenceWorker", "output schema rejected", e)
+                    releaseEngine(engine)
+                } catch (oom: OutOfMemoryError) {
+                    status = ModelStatus.ERROR
+                    Log.e("InferenceWorker", "infer OOM", oom)
+                    releaseEngine(engine)
+                } catch (t: Throwable) {
+                    status = ModelStatus.ERROR
+                    Log.e("InferenceWorker", "infer failed", t)
+                    releaseEngine(engine)
+                }
+
+                // 超时 / OOM / 异常：回退模板降级，草案仍进入待确认队列。
+                if (output == null) {
+                    output = TemplateFallbackEngine().infer(input)
+                    if (status == ModelStatus.SUCCESS) status = ModelStatus.FALLBACK_TEMPLATE
+                } else if (engine is TemplateFallbackEngine) {
+                    status = ModelStatus.FALLBACK_TEMPLATE
+                }
             }
 
             val finishedAt = System.currentTimeMillis()
@@ -73,7 +88,7 @@ class InferenceWorker(
                 startedAt = startedAt,
                 finishedAt = finishedAt,
                 status = status,
-                engineName = engine.engineName,
+                engineName = engine?.engineName ?: TemplateFallbackEngine().engineName,
                 inputSnapshotHash = inputHash,
                 outputJson = ModelOutputJson.toJson(output),
                 latencyMs = finishedAt - startedAt

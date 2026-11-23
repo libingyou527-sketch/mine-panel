@@ -58,10 +58,10 @@ fun AutoConfirmSection(viewModel: DraftViewModel) {
             }
             Text(
                 if (state.autoConfirmEnabled) {
-                    "已开启：本地模型成功生成的草案自动裁决，记忆要点写入正式记忆，标签与回顾文案标记为已确认；" +
+                    "已开启：内置模型成功生成的草案自动裁决，记忆要点写入正式记忆，标签与回顾文案标记为已确认；" +
                         "兜底模板、超时或异常内容仍需手动确认，重复内容不重复写入。"
                 } else {
-                    "已关闭。开启后本地模型成功生成的草案可自动裁决，免去逐条确认；" +
+                    "已关闭。开启后内置模型成功生成的草案可自动裁决，免去逐条确认；" +
                         "模型不可用时的兜底文案仍进入待确认队列。"
                 },
                 style = MaterialTheme.typography.bodySmall,

@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.minepanel.core.ServiceLocator
 import app.minepanel.data.repository.ModelFileRepository
+import app.minepanel.model.ModelFileValidator
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 data class ModelFileUiState(
     val path: String? = null,
     val hash: String? = null,
+    val isBundled: Boolean = false,
     val importing: Boolean = false,
     val message: String? = null,
     val messageIsError: Boolean = false
@@ -29,7 +31,11 @@ class ModelFileViewModel(app: Application) : AndroidViewModel(app) {
     init {
         ServiceLocator.settings().settings
             .onEach { snap ->
-                _state.value = _state.value.copy(path = snap.modelFilePath, hash = snap.modelHash)
+                _state.value = _state.value.copy(
+                    path = snap.modelFilePath,
+                    hash = snap.modelHash,
+                    isBundled = ModelFileValidator.isBaseline(snap.modelHash)
+                )
             }
             .launchIn(viewModelScope)
     }
@@ -46,6 +52,7 @@ class ModelFileViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = ModelFileUiState(
                 path = fresh.modelFilePath,
                 hash = fresh.modelHash,
+                isBundled = ModelFileValidator.isBaseline(fresh.modelHash),
                 importing = false,
                 message = message,
                 messageIsError = isError
@@ -56,7 +63,7 @@ class ModelFileViewModel(app: Application) : AndroidViewModel(app) {
     fun clear() {
         viewModelScope.launch {
             repository.clear()
-            _state.value = _state.value.copy(path = null, hash = null, message = "已移除本地模型", messageIsError = false)
+            _state.value = _state.value.copy(path = null, hash = null, isBundled = false, message = "已移除本地模型", messageIsError = false)
         }
     }
 }

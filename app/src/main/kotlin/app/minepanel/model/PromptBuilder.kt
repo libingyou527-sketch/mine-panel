@@ -13,8 +13,9 @@ object PromptBuilder {
         "你是本地设备使用回顾助手，只依据给定的粗类别元数据。" +
             "用自然中文写一句简短回顾；不要复述输入里的数据，不要输出分值、字段名、键名或 JSON 结构；" +
             "不做健康、心理或人格诊断；不提及具体应用名称。" +
-            "只返回 JSON：{\"panelNarrative\":\"回顾一句话\",\"statusTags\":[\"一个标签\"]," +
-            "\"draftMemories\":[\"一个要点\"]}。"
+            "只返回 JSON；下列尖括号只是格式占位，输出时必须替换成基于数据的真实内容，不得保留尖括号：" +
+            "{\"panelNarrative\":\"<回顾文案>\",\"statusTags\":[\"<标签>\"]," +
+            "\"draftMemories\":[\"<要点>\"]}。"
 
     private const val IM_START = "<|im_start|>"
     private const val IM_END = "<|im_end|>"

@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.minepanel.model.ModelFileValidator
 import java.io.File
 
 @Composable
@@ -48,16 +49,28 @@ fun ModelFileSection(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                "本地模型",
+                if (state.path != null && state.isBundled) "已选用内置模型" else "本地模型",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
 
             if (state.path != null) {
-                Text(
-                    text = File(state.path!!).name,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                if (state.isBundled) {
+                    Text(
+                        text = ModelFileValidator.BUNDLED_DISPLAY_NAME,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = File(state.path!!).name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    Text(
+                        text = File(state.path!!).name,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
                 state.hash?.let {
                     Text(
                         text = "SHA-256 ${it.take(8)}…",

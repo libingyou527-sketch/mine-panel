@@ -12,9 +12,9 @@ class TemplateFallbackEngine : InferenceEngine {
 
     override val engineName: String = "template"
 
-    /** 聊天兜底：本地模型不可用时给出中性提示，不编造回答。 */
+    /** 聊天兜底：内置模型不可用时给出中性提示，不编造回答。 */
     override suspend fun chat(prompt: String): String =
-        "本地模型暂不可用，这次先不展开回复，稍后再试。"
+        "内置模型暂不可用，这次先不展开回复，稍后再试。"
 
     override suspend fun infer(input: ModelInput): ModelOutput {
         val dominantCategory = input.categoryMinutes.maxByOrNull { it.value }?.key
